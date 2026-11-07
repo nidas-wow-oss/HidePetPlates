@@ -1,6 +1,6 @@
 ## Interface: 30300
-## Title: HidePetPlates
-## Title-esES: HidePetPlates
+## Title: |cffffffffH|r|cffffffffi|r|cffffffffd|r|cffffffffe|r|cff00ff00P|r|cff00ff00e|r|cff00ff00t|r|cff00ff00P|r|cff00ff00l|r|cff00ff00a|r|cff00ff00t|r|cff00ff00e|r|cff00ff00s|r
+## Title-esES: |cffffffffH|r|cffffffffi|r|cffffffffd|r|cffffffffe|r|cff00ff00P|r|cff00ff00e|r|cff00ff00t|r|cff00ff00P|r|cff00ff00l|r|cff00ff00a|r|cff00ff00t|r|cff00ff00e|r|cff00ff00s|r
 ## Notes: Hides the nameplates of Mage Mirror Images and Hunter Snake Trap snakes (Viper / Venomous Snake).
 ## Notes-esES: Oculta las placas de nombre de las Imágenes Espejo del mago y de las serpientes de la Trampa de Serpientes del cazador (Víbora / Serpiente venenosa).
 ## Author: Nidhaus
