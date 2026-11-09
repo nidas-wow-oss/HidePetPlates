@@ -159,7 +159,7 @@ end
 
 -- =========================================================
 -- JUGADOR o NPC, con la logica de Nidhaus_Plates
--- (TidyPlatesCore.lua, GetUnitReaction): del color de la barra.
+-- (PlatesCore.lua, GetUnitReaction): del color de la barra.
 --   verde / amarillo / rojo puros -> NPC
 --   azul puro o cualquier otro    -> jugador (color de clase)
 -- =========================================================
