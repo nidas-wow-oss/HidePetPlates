@@ -1,32 +1,17 @@
--- HidePetPlates - WoW 3.3.5a
--- Oculta las placas de:
---   * Imagenes Espejo del mago (llevan el NOMBRE DEL MAGO, no "Mirror Image")
---   * Viboras / Culebras venenosas de la Trampa de Serpientes del cazador
---
--- /hpp abre el menu para elegir que se oculta.
-
 local ADDON = ...
 local WorldFrame = WorldFrame
 local select, pairs, type = select, pairs, type
 local gsub, lower = string.gsub, string.lower
 
--- =========================================================
--- Ajustes guardados
---
--- WoW carga las SavedVariables DESPUES de ejecutar este archivo, asi que los
--- valores por defecto se completan en ADDON_LOADED. Si se hiciera aqui con
--- "HidePetPlatesDB = HidePetPlatesDB or {...}", la carga posterior pisaria
--- la tabla y se perderian.
--- =========================================================
 local DEFAULTS = {
-    copias     = true,   -- Imagenes Espejo del mago
-    serpientes = true,   -- serpientes de la Trampa de Serpientes
-    entes      = false,  -- Treants del druida (Fuerza de la naturaleza)
-    lobos      = false,  -- Spirit Wolves del chaman (Espiritu feral)
+    copias     = true,
+    serpientes = true,
+    entes      = false,
+    lobos      = false,
 }
 
 local db = {}
-for k, v in pairs(DEFAULTS) do db[k] = v end   -- hasta que llegue lo guardado
+for k, v in pairs(DEFAULTS) do db[k] = v end
 
 local function CargarAjustes()
     if type(HidePetPlatesDB) ~= "table" then HidePetPlatesDB = {} end
@@ -36,13 +21,6 @@ local function CargarAjustes()
     db = HidePetPlatesDB
 end
 
--- =========================================================
--- Nombres
---
--- El cliente devuelve el nombre YA TRADUCIDO, asi que hacen falta los de cada
--- idioma. Se normaliza antes de comparar (minusculas y vocales sin tilde),
--- porque string.lower de Lua 5.1 solo toca ASCII.
--- =========================================================
 local ACENTOS = {
     ["\195\161"]="a", ["\195\160"]="a", ["\195\164"]="a", ["\195\162"]="a",
     ["\195\169"]="e", ["\195\168"]="e", ["\195\171"]="e", ["\195\170"]="e",
@@ -71,44 +49,36 @@ local function Tabla(...)
     return t
 end
 
--- Separadas, porque cada grupo va con su casilla.
 local SERPIENTES = Tabla(
-    "Viper", "Venomous Snake",                   -- enUS
-    "Vibora", "V\195\173bora",                   -- esES / esMX
+    "Viper", "Venomous Snake",
+    "Vibora", "V\195\173bora",
     "Culebra venenosa", "Serpiente venenosa",
-    "Vipere", "Serpent venimeux",                -- frFR
-    "Giftschlange",                              -- deDE
-    "Cobra venenosa",                            -- ptBR
-    "Гадюка", "Ядовитая змея")                   -- ruRU
+    "Vipere", "Serpent venimeux",
+    "Giftschlange",
+    "Cobra venenosa",
+    "Гадюка", "Ядовитая змея")
 
--- Treants del druida. Por nombre: son tres criaturas con el mismo nombre y
--- ninguna lleva el de un jugador, asi que la regla de las copias no las toca.
 local ENTES = Tabla(
-    "Treant",                                    -- enUS / deDE
-    "Ente",                                      -- esES / esMX
-    "Tr\195\169ant",                              -- frFR
-    "Древень")                                   -- ruRU
+    "Treant",
+    "Ente",
+    "Tr\195\169ant",
+    "Древень")
 
--- Spirit Wolves del chaman, mismo caso.
 local LOBOS = Tabla(
-    "Spirit Wolf",                               -- enUS
-    "Lobo espiritual", "Lobo esp\195\173ritu",    -- esES / esMX
-    "Loup spirituel",                            -- frFR
-    "Geisterwolf",                               -- deDE
-    "Призрачный волк", "Дух волка")              -- ruRU
+    "Spirit Wolf",
+    "Lobo espiritual", "Lobo esp\195\173ritu",
+    "Loup spirituel",
+    "Geisterwolf",
+    "Призрачный волк", "Дух волка")
 
--- Por si algun servidor nombra asi a las copias del mago.
 local COPIAS_POR_NOMBRE = Tabla(
     "Mirror Image", "Imagen especular", "Imagen de espejo",
     "Image miroir", "Spiegelbild",
-    "Зеркальное изображение")                    -- ruRU
+    "Зеркальное изображение")
 
 local plates = {}
 local flagged = {}
 
--- ---------------------------------------------------------
--- Reconocer una placa
--- ---------------------------------------------------------
 local function BuscarBarra(f)
     if not f.GetNumChildren then return nil end
     for i = 1, f:GetNumChildren() do
@@ -120,9 +90,6 @@ local function BuscarBarra(f)
     end
 end
 
--- Metodo clasico (textura del borde) y, de respaldo, marco sin nombre con
--- barra de vida y texto: si un parche cambiara la textura, el addon no se
--- quedaria sin reconocer ninguna placa.
 local function IsNamePlate(f)
     if not f.GetName or f:GetName() then return false end
 
@@ -157,12 +124,6 @@ local function BarraDeVida(plate)
     return plate.hppBarra
 end
 
--- =========================================================
--- JUGADOR o NPC, con la logica de Nidhaus_Plates
--- (PlatesCore.lua, GetUnitReaction): del color de la barra.
---   verde / amarillo / rojo puros -> NPC
---   azul puro o cualquier otro    -> jugador (color de clase)
--- =========================================================
 local function EsJugador(plate)
     local barra = BarraDeVida(plate)
     if not barra then return nil end
@@ -176,16 +137,6 @@ local function EsJugador(plate)
     return true
 end
 
--- =========================================================
--- Que se oculta
---
--- Serpientes: por nombre.
--- Copias del mago: placa NPC cuyo nombre es TAMBIEN el de un jugador, en
--- pantalla ahora o visto con sus copias hace menos de 35 s (la Imagen Espejo
--- dura 30). Asi no se tocan grupos de NPCs iguales (treants, lobos del
--- chaman, necrofagos) y una copia no reaparece cuando el mago sale de vista.
--- Nunca se mira arena1, target ni ninguna otra unidad.
--- =========================================================
 local MEMORIA = 35
 local recientes, hayJugador, hayNPC = {}, {}, {}
 
@@ -237,12 +188,6 @@ local function Evaluate()
     end
 end
 
--- =========================================================
--- Como se oculta
---
--- Cada fotograma, y pieza por pieza: el juego repone el alpha del marco de la
--- placa, pero no el de cada barra y cada texto por separado.
--- =========================================================
 local function AlphaDeTodo(plate, a)
     plate:SetAlpha(a)
     for i = 1, plate:GetNumChildren() do
@@ -267,13 +212,6 @@ local function SetHidden(plate, hide)
     end
 end
 
--- =========================================================
--- Colores de clase en las placas
---
--- Sin ellos el mago tambien sale en rojo puro y no se le puede distinguir de
--- sus copias. Se encienden al entrar; si el cliente no tiene esa variable no
--- se toca nada.
--- =========================================================
 local function AsegurarColoresDeClase()
     local v = GetCVar("ShowClassColorInNameplate")
     if v ~= nil and v ~= "1" then
@@ -281,9 +219,6 @@ local function AsegurarColoresDeClase()
     end
 end
 
--- =========================================================
--- Menu
--- =========================================================
 local menu
 
 local function CrearCasilla(padre, nombreGlobal, texto, clave, y)
@@ -297,8 +232,7 @@ local function CrearCasilla(padre, nombreGlobal, texto, clave, y)
     cb:SetScript("OnShow", function(self) self:SetChecked(db[clave]) end)
     cb:SetScript("OnClick", function(self)
         db[clave] = self:GetChecked() and true or false
-        -- Se aplica al momento: lo que deja de estar marcado vuelve a verse
-        -- en el siguiente fotograma, sin /reload.
+
         Evaluate()
     end)
     return cb
@@ -325,7 +259,7 @@ local function CrearMenu()
     f:SetScript("OnDragStart", f.StartMoving)
     f:SetScript("OnDragStop", f.StopMovingOrSizing)
     f:Hide()
-    -- Escape lo cierra, como cualquier ventana del juego.
+
     tinsert(UISpecialFrames, "HidePetPlatesMenu")
 
     local titulo = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -353,9 +287,6 @@ SlashCmdList["HIDEPETPLATES"] = function()
     if menu:IsShown() then menu:Hide() else menu:Show() end
 end
 
--- =========================================================
--- Arranque y bucle
--- =========================================================
 local ev = CreateFrame("Frame")
 ev:RegisterEvent("ADDON_LOADED")
 ev:RegisterEvent("PLAYER_LOGIN")
@@ -378,8 +309,7 @@ bucle:SetScript("OnUpdate", function(_, elapsed)
 
     for plate, hide in pairs(flagged) do
         if hide and plate:IsShown() then
-            -- El juego recicla las placas: si el nombre cambio entre dos
-            -- evaluaciones, se destapa en el acto.
+
             local nombre = GetPlateName(plate)
             if plate.hppNombre and nombre ~= plate.hppNombre then
                 flagged[plate] = false
